@@ -1,226 +1,130 @@
-import { useMemo, useState } from "react";
-import {
-    Box,
-    Paper,
-    Stack,
-    Typography,
-    Chip,
-    Divider,
-    List,
-    ListItemButton,
-    ListItemText,
-    Tabs,
-    Tab,
-    TextField,
-    Button,
-    IconButton,
-} from "@mui/material";
-import CallIcon from "@mui/icons-material/Call";
-import CallEndIcon from "@mui/icons-material/CallEnd";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+// src/pages/operator/CallsPage.jsx
+import { useState } from "react";
+import { Table, Tag, Typography, Space, Input, Select, Button, Tooltip } from "antd";
+import { PhoneOutlined, SearchOutlined, PlayCircleOutlined } from "@ant-design/icons";
 
-const mockCalls = [
-    {
-        id: "call-1001",
-        status: "incoming",
-        queue: "Support",
-        customer: { name: "Иванов Иван", phone: "+375291112233", segment: "VIP" },
-        topic: "Не проходит платеж",
-        startedAt: null,
-    },
-    {
-        id: "call-1002",
-        status: "active",
-        queue: "Sales",
-        customer: { name: "Петров Пётр", phone: "+375291112244", segment: "Standard" },
-        topic: "Консультация по тарифам",
-        startedAt: "17:42",
-    },
-    {
-        id: "call-1003",
-        status: "wrapup",
-        queue: "Support",
-        customer: { name: "Сидорова Анна", phone: "+375291556677", segment: "Standard" },
-        topic: "Смена данных профиля",
-        startedAt: "17:31",
-    },
+const { Title, Text } = Typography;
+
+const CALLS = [
+    { id: 1, client: "Ольга Кузнецова",  phone: "+375291234567", direction: "inbound",  duration: "3:24", status: "completed", date: "2026-04-11T10:15:00Z", ticket_id: 1 },
+    { id: 2, client: "Сергей Морозов",   phone: "+375297654321", direction: "inbound",  duration: "1:45", status: "completed", date: "2026-04-11T11:02:00Z", ticket_id: 2 },
+    { id: 3, client: "Неизвестный",       phone: "+375293334455", direction: "inbound",  duration: "0:32", status: "missed",    date: "2026-04-11T11:30:00Z", ticket_id: null },
+    { id: 4, client: "Мария Новикова",   phone: "+375296789012", direction: "outbound", duration: "5:10", status: "completed", date: "2026-04-11T12:00:00Z", ticket_id: 3 },
+    { id: 5, client: "Дмитрий Козлов",   phone: "+375295432109", direction: "inbound",  duration: "2:05", status: "completed", date: "2026-04-11T13:45:00Z", ticket_id: 6 },
+    { id: 6, client: "Неизвестный",       phone: "+375291122334", direction: "inbound",  duration: "0:00", status: "missed",    date: "2026-04-11T14:20:00Z", ticket_id: null },
 ];
 
-function statusChip(status) {
-    switch (status) {
-        case "incoming":
-            return <Chip size="small" color="warning" label="Входящий" />;
-        case "active":
-            return <Chip size="small" color="success" label="В разговоре" />;
-        case "wrapup":
-            return <Chip size="small" color="info" label="Завершение" />;
-        default:
-            return <Chip size="small" label={status} />;
-    }
-}
-
-function TabPanel({ value, index, children }) {
-    if (value !== index) return null;
-    return <Box sx={{ pt: 2 }}>{children}</Box>;
-}
+const STATUS_COLOR  = { completed: "success", missed: "error",    busy: "warning" };
+const STATUS_LABEL  = { completed: "Завершён", missed: "Пропущен", busy: "Занято"  };
+const DIR_COLOR     = { inbound: "blue", outbound: "green" };
+const DIR_LABEL     = { inbound: "Входящий", outbound: "Исходящий" };
 
 export function CallsPage() {
-    const [selectedId, setSelectedId] = useState(mockCalls[0].id);
-    const [tab, setTab] = useState(0);
+    const [search, setSearch]   = useState("");
+    const [statusF, setStatusF] = useState(null);
 
-    const selected = useMemo(
-        () => mockCalls.find((c) => c.id === selectedId) || mockCalls[0],
-        [selectedId]
-    );
+    const filtered = CALLS.filter((c) => {
+        const matchSearch = !search ||
+            c.client.toLowerCase().includes(search.toLowerCase()) ||
+            c.phone.includes(search);
+        const matchStatus = !statusF || c.status === statusF;
+        return matchSearch && matchStatus;
+    });
+
+    const columns = [
+        {
+            title: "Дата и время",
+            dataIndex: "date",
+            width: 160,
+            render: (d) => new Date(d).toLocaleString("ru", {
+                day: "2-digit", month: "2-digit",
+                hour: "2-digit", minute: "2-digit",
+            }),
+        },
+        {
+            title: "Направление",
+            dataIndex: "direction",
+            width: 130,
+            render: (d) => <Tag color={DIR_COLOR[d]}>{DIR_LABEL[d]}</Tag>,
+        },
+        {
+            title: "Клиент / Номер",
+            render: (_, row) => (
+                <div>
+                    <Text strong>{row.client}</Text>
+                    <div>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                            <PhoneOutlined style={{ marginRight: 4 }} />
+                            {row.phone}
+                        </Text>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            title: "Статус",
+            dataIndex: "status",
+            width: 120,
+            render: (s) => <Tag color={STATUS_COLOR[s]}>{STATUS_LABEL[s]}</Tag>,
+        },
+        {
+            title: "Длительность",
+            dataIndex: "duration",
+            width: 110,
+            align: "right",
+            render: (d, row) => (
+                <Text style={{ fontVariantNumeric: "tabular-nums", color: row.status === "missed" ? "#bbb" : undefined }}>
+                    {d}
+                </Text>
+            ),
+        },
+        {
+            title: "",
+            width: 50,
+            render: (_, row) =>
+                row.status === "completed" ? (
+                    <Tooltip title="Воспроизвести запись">
+                        <Button type="text" size="small" icon={<PlayCircleOutlined />} />
+                    </Tooltip>
+                ) : null,
+        },
+    ];
 
     return (
-        <Stack spacing={2}>
-            <Typography variant="h6">Звонки</Typography>
+        <div>
+            <Title level={4} style={{ marginBottom: 16 }}>Звонки</Title>
 
-            <Box sx={{ display: "grid", gridTemplateColumns: "360px 1fr", gap: 2 }}>
-                {/* Левая колонка: список звонков */}
-                <Paper sx={{ p: 2 }}>
-                    <Stack spacing={1.5}>
-                        <Typography variant="subtitle1">Очередь / активные</Typography>
+            <Space style={{ marginBottom: 16 }} wrap>
+                <Input
+                    placeholder="Поиск по клиенту или номеру"
+                    prefix={<SearchOutlined />}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    allowClear
+                    style={{ width: 280 }}
+                />
+                <Select
+                    placeholder="Статус"
+                    allowClear
+                    style={{ width: 150 }}
+                    value={statusF}
+                    onChange={setStatusF}
+                    options={[
+                        { value: "completed", label: "Завершённые" },
+                        { value: "missed",    label: "Пропущенные" },
+                    ]}
+                />
+            </Space>
 
-                        <TextField size="small" label="Поиск" placeholder="ФИО / телефон / тема" />
-
-                        <Divider />
-
-                        <List disablePadding>
-                            {mockCalls.map((c) => (
-                                <ListItemButton
-                                    key={c.id}
-                                    selected={c.id === selectedId}
-                                    onClick={() => setSelectedId(c.id)}
-                                    sx={{ mb: 0.5, borderRadius: 1 }}
-                                >
-                                    <ListItemText
-                                        primary={
-                                            <Stack direction="row" spacing={1} alignItems="center">
-                                                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                                    {c.customer.name}
-                                                </Typography>
-                                                {statusChip(c.status)}
-                                            </Stack>
-                                        }
-                                        secondary={
-                                            <Stack spacing={0.5} sx={{ mt: 0.5 }}>
-                                                <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                                                    {c.customer.phone} • {c.queue} • {c.topic}
-                                                </Typography>
-                                                {c.startedAt ? (
-                                                    <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                                                        Начало: {c.startedAt}
-                                                    </Typography>
-                                                ) : null}
-                                            </Stack>
-                                        }
-                                    />
-                                </ListItemButton>
-                            ))}
-                        </List>
-                    </Stack>
-                </Paper>
-
-                {/* Правая колонка: рабочая область */}
-                <Paper sx={{ p: 2 }}>
-                    <Stack spacing={2}>
-                        {/* Верхняя панель действия */}
-                        <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
-                            <Stack spacing={0.5}>
-                                <Stack direction="row" spacing={1} alignItems="center">
-                                    <Typography variant="h6" sx={{ lineHeight: 1.1 }}>
-                                        {selected.customer.name}
-                                    </Typography>
-                                    <Chip size="small" label={selected.customer.segment} />
-                                    {statusChip(selected.status)}
-                                </Stack>
-                                <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                                    {selected.customer.phone} • Тема: {selected.topic}
-                                </Typography>
-                            </Stack>
-
-                            <Stack direction="row" spacing={1}>
-                                <IconButton
-                                    title="Скопировать номер"
-                                    onClick={() => navigator.clipboard?.writeText(selected.customer.phone)}
-                                >
-                                    <ContentCopyIcon />
-                                </IconButton>
-                                <Button
-                                    variant="contained"
-                                    startIcon={<CallIcon />}
-                                    disabled={selected.status !== "incoming"}
-                                >
-                                    Принять
-                                </Button>
-                                <Button
-                                    variant="outlined"
-                                    color="error"
-                                    startIcon={<CallEndIcon />}
-                                    disabled={selected.status === "incoming"}
-                                >
-                                    Завершить
-                                </Button>
-                            </Stack>
-                        </Stack>
-
-                        <Divider />
-
-                        {/* Вкладки */}
-                        <Tabs value={tab} onChange={(_, v) => setTab(v)}>
-                            <Tab label="Карточка клиента" />
-                            <Tab label="Скрипт" />
-                            <Tab label="Заметки" />
-                        </Tabs>
-
-                        <TabPanel value={tab} index={0}>
-                            <Stack spacing={1.5}>
-                                <Typography variant="subtitle1">Данные клиента </Typography>
-                                <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
-                                    <TextField size="small" label="ФИО" value={selected.customer.name} />
-                                    <TextField size="small" label="Телефон" value={selected.customer.phone} />
-                                    <TextField size="small" label="Сегмент" value={selected.customer.segment} />
-                                    <TextField size="small" label="Очередь" value={selected.queue} />
-                                </Box>
-                            </Stack>
-                        </TabPanel>
-
-                        <TabPanel value={tab} index={1}>
-                            <Stack spacing={1.5}>
-                                <Typography variant="subtitle1">Скрипт разговора </Typography>
-                                <Paper variant="outlined" sx={{ p: 2, bgcolor: "background.default" }}>
-                                    <Typography variant="body2">
-                                        1) Приветствие и идентификация клиента.
-                                    </Typography>
-                                    <Typography variant="body2">
-                                        2) Уточнить проблему и контекст.
-                                    </Typography>
-                                    <Typography variant="body2">
-                                        3) Предложить решение / эскалацию.
-                                    </Typography>
-                                </Paper>
-                            </Stack>
-                        </TabPanel>
-
-                        <TabPanel value={tab} index={2}>
-                            <Stack spacing={1.5}>
-                                <Typography variant="subtitle1">Заметки оператора </Typography>
-                                <TextField
-                                    multiline
-                                    minRows={6}
-                                    placeholder="Пиши кратко: что попросил клиент, что сделал оператор, результат."
-                                />
-                                <Stack direction="row" spacing={1}>
-                                    <Button variant="contained">Сохранить </Button>
-                                    <Button variant="outlined">Создать обращение </Button>
-                                </Stack>
-                            </Stack>
-                        </TabPanel>
-                    </Stack>
-                </Paper>
-            </Box>
-        </Stack>
+            <Table
+                columns={columns}
+                dataSource={filtered}
+                rowKey="id"
+                size="middle"
+                pagination={{ pageSize: 20 }}
+                locale={{ emptyText: "Звонки не найдены" }}
+                rowClassName={(row) => row.status === "missed" ? "row-missed" : ""}
+            />
+        </div>
     );
 }

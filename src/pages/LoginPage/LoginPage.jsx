@@ -1,54 +1,39 @@
-// src/pages/LoginPage.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-    Paper,
-    TextField,
-    Button,
-    Stack,
-    Typography,
-} from "@mui/material";
-
+import { Paper, TextField, Button, Stack, Typography, Alert } from "@mui/material";
+import { useAuthStore } from "../../features/auth/authStore";
+import { http } from "../../shared/api/http";
 
 export function LoginPage() {
-    const [login, setLogin] = useState("");
+    const [login, setLogin]       = useState("");
     const [password, setPassword] = useState("");
-    const [loading, setLoading] = useState(false);
-    const navigate = useNavigate();
+    const [loading, setLoading]   = useState(false);
+    const [error, setError]       = useState(null);
+
+    const authLogin = useAuthStore((s) => s.login);
+    const navigate  = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
+        setError(null);
 
         try {
-            // TODO: заменить на реальный запрос к бэкенду
-            // const res = await api.post("/auth/login/", { login, password });
-            // const { token, user } = res.data;
+            // Реальный запрос — MSW перехватит его в dev-режиме
+            const res = await http.post("/auth/login/", { username: login, password });
+            const { user } = res.data;
 
-            // Временная логика определения роли:
-            // например, все логины, содержащие "mgr", считаем менеджерами
-            const role =
-                login.toLowerCase().includes("mgr") ||
-                login.toLowerCase().includes("manager")
-                    ? "manager"
-                    : "operator";
+            authLogin({ token: null, user }); // token = null, т.к. используем Django session
 
-            const fakeUser = {
-                id: 1,
-                name: login || "Demo User",
-                role,
-            };
-
-            setAuth({ token: "demo-token", user: fakeUser });
-
-            if (role === "manager") {
-                navigate("/manager/dashboard", { replace: true });
-            } else {
-                navigate("/operator/dashboard", { replace: true });
-            }
-        } catch (e) {
-            // здесь можно показать ошибку авторизации
-            console.error(e);
+            navigate(user.role === "manager" ? "/manager/dashboard" : "/operator/dashboard", {
+                replace: true,
+            });
+        } catch (err) {
+            setError(
+                err.response?.status === 401
+                    ? "Неверный логин или пароль"
+                    : "Ошибка сервера. Попробуйте позже."
+            );
         } finally {
             setLoading(false);
         }
@@ -67,6 +52,8 @@ export function LoginPage() {
                             Вход в систему
                         </Typography>
 
+                        {error && <Alert severity="error">{error}</Alert>}
+
                         <TextField
                             label="Логин"
                             size="small"
@@ -74,6 +61,7 @@ export function LoginPage() {
                             value={login}
                             onChange={(e) => setLogin(e.target.value)}
                             required
+                            autoFocus
                         />
 
                         <TextField
@@ -86,22 +74,12 @@ export function LoginPage() {
                             required
                         />
 
-                        <Button
-                            type="submit"
-                            variant="contained"
-                            fullWidth
-                            disabled={loading}
-                        >
+                        <Button type="submit" variant="contained" fullWidth disabled={loading}>
                             {loading ? "Входим..." : "Войти"}
                         </Button>
 
-                        <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            textAlign="center"
-                        >
-                            Для демо роль определяется автоматически по логину
-                            (например, user `manager1` попадёт в интерфейс руководителя).
+                        <Typography variant="caption" color="text.secondary" textAlign="center">
+                            Демо: логин <strong>operator</strong> или <strong>manager</strong>
                         </Typography>
                     </Stack>
                 </form>

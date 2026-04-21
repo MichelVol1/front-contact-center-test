@@ -1,12 +1,12 @@
 import { Navigate, Outlet } from "react-router-dom";
-import { useEffect } from "react";
-import { useAuthStore } from "./authStore";
+import { useAuthStore } from "./authStore.js";
 
 export function RequireAuth() {
-    const { user, isLoading, loadMe } = useAuthStore();
+    const user = useAuthStore((s) => s.user);
 
-    useEffect(() => { loadMe(); }, [loadMe]);
+    if (!user) {
+        return <Navigate to="/login" replace />;
+    }
 
-    if (isLoading) return null; // позже заменим на спиннер
-    return user ? <Outlet /> : <Navigate to="/login" replace />;
+    return <Outlet />;
 }

@@ -1,8 +1,12 @@
 import { Navigate, Outlet } from "react-router-dom";
-import { useAuthStore } from "./authStore";
+import { useAuthStore } from "./authStore.js";
 
-export function RequireRole({ role }) {
-  const user = useAuthStore((s) => s.user);
-  if (!user) return <Navigate to="/login" replace />;
-  return user.role === role ? <Outlet /> : <Navigate to="/" replace />;
+export function RequireRole({ roles }) {
+    const user = useAuthStore((s) => s.user);
+
+    if (!user || !roles.includes(user.role)) {
+        return <Navigate to="/login" replace />;
+    }
+
+    return <Outlet />;
 }

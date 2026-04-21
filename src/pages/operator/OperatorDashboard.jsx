@@ -1,219 +1,119 @@
+import { Row, Col, Card, Statistic, Tag, Table, Typography, Badge } from "antd";
 import {
-    Grid,
-    Paper,
-    Typography,
-    Stack,
-    Chip,
-    Box,
-    List,
-    ListItem,
-    ListItemText,
-    Divider,
-    Button,
-} from "@mui/material";
+    PhoneOutlined, ClockCircleOutlined,
+    CheckCircleOutlined, ExclamationCircleOutlined,
+} from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 
-function StatCard({ title, value, hint }) {
-    return (
-        <Paper sx={{ p: 2 }}>
-            <Stack spacing={0.5}>
-                <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                    {title}
-                </Typography>
-                <Typography variant="h4">{value}</Typography>
-                <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                    {hint}
-                </Typography>
-            </Stack>
-        </Paper>
-    );
-}
+const { Title, Text } = Typography;
+
+// Моковые данные
+const STATS = [
+    { title: "В очереди",    value: 4,  icon: <ClockCircleOutlined />,       color: "#faad14" },
+    { title: "Мои активные", value: 2,  icon: <PhoneOutlined />,             color: "#1677ff" },
+    { title: "Закрыто сегодня", value: 8, icon: <CheckCircleOutlined />,     color: "#52c41a" },
+    { title: "Эскалации",    value: 1,  icon: <ExclamationCircleOutlined />, color: "#ff4d4f" },
+];
+
+const MY_TICKETS = [
+    { id: 2, title: "Ошибка при оплате",       status: "in_progress", client: "Сергей Морозов",  priority: "high" },
+    { id: 6, title: "Заблокирована карта",      status: "in_progress", client: "Дмитрий Козлов", priority: "medium" },
+];
+
+const QUEUE = [
+    { id: 7, title: "Не доставлен заказ",       client: "Елена Фёдорова",  wait: "3 мин" },
+    { id: 8, title: "Не работает приложение",   client: "Алексей Волков",  wait: "7 мин" },
+    { id: 9, title: "Вопрос по документам",     client: "Наталья Орлова",  wait: "12 мин" },
+    { id: 10, title: "Проблема с регистрацией", client: "Роман Соколов",   wait: "15 мин" },
+];
+
+const PRIORITY_COLOR = { high: "red", medium: "orange", low: "default" };
+const STATUS_COLOR   = { in_progress: "processing", new: "default", closed: "success" };
+const STATUS_LABEL   = { in_progress: "В работе", new: "Новый", closed: "Закрыт" };
 
 export function OperatorDashboard() {
-    const events = [
-        {
-            time: "17:32",
-            type: "incoming_call",
-            text: "Входящий звонок от +375 29 111 22 33 (клиент: Иванов И.).",
+    const navigate = useNavigate();
+
+    const myTicketColumns = [
+        { title: "Тема",     dataIndex: "title",
+            render: (t, row) => (
+                <a onClick={() => navigate(`/operator/tickets/${row.id}`)}>{t}</a>
+            ),
         },
-        {
-            time: "17:28",
-            type: "ticket_updated",
-            text: "Обращение T-512 переведено в статус «В работе».",
+        { title: "Клиент",   dataIndex: "client", width: 180 },
+        { title: "Статус",   dataIndex: "status", width: 120,
+            render: (s) => <Badge status={STATUS_COLOR[s]} text={STATUS_LABEL[s]} />,
         },
-        {
-            time: "17:15",
-            type: "status_changed",
-            text: "Ваш статус изменён на «Готов к приёму звонков».",
+        { title: "Приоритет", dataIndex: "priority", width: 110,
+            render: (p) => (
+                <Tag color={PRIORITY_COLOR[p]}>
+                    {p === "high" ? "Высокий" : p === "medium" ? "Средний" : "Низкий"}
+                </Tag>
+            ),
         },
     ];
 
-    const recentTickets = [
-        {
-            id: "T-512",
-            client: "Иванов Иван",
-            subject: "Не проходит платёж",
-            status: "В работе",
+    const queueColumns = [
+        { title: "Тема",    dataIndex: "title" },
+        { title: "Клиент",  dataIndex: "client", width: 180 },
+        { title: "Ожидание", dataIndex: "wait", width: 100,
+            render: (w) => <Text type="warning">{w}</Text>,
         },
-        {
-            id: "T-509",
-            client: "Петров Пётр",
-            subject: "Вопрос по тарифу",
-            status: "Ожидание клиента",
-        },
-        {
-            id: "T-503",
-            client: "Сидорова Анна",
-            subject: "Проблема с личным кабинетом",
-            status: "Решено",
-        },
-    ];
-
-    const kbHints = [
-        "Скрипт приветствия для входящих звонков",
-        "Частые причины отказа оплаты",
-        "Инструкция: смена тарифа клиенту",
     ];
 
     return (
-        <Grid container spacing={2}>
+        <div>
+            <Title level={4} style={{ marginBottom: 20 }}>Рабочее место оператора</Title>
+
             {/* KPI карточки */}
-            <Grid item xs={12} md={3}>
-                <StatCard
-                    title="Активные звонки"
-                    value="1"
-                    hint="Сейчас в работе"
-                />
-            </Grid>
-            <Grid item xs={12} md={3}>
-                <StatCard
-                    title="В очереди"
-                    value="4"
-                    hint="Ожидают оператора"
-                />
-            </Grid>
-            <Grid item xs={12} md={3}>
-                <StatCard
-                    title="Обработано сегодня"
-                    value="23"
-                    hint="Звонки и обращения"
-                />
-            </Grid>
-            <Grid item xs={12} md={3}>
-                <StatCard
-                    title="Средн. AHT"
-                    value="4:18"
-                    hint="Среднее время обработки"
-                />
-            </Grid>
-
-            {/* Статус смены + лента событий */}
-            <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 2, height: "100%" }}>
-                    <Stack spacing={1.5}>
-                        <Stack
-                            direction="row"
-                            justifyContent="space-between"
-                            alignItems="center"
-                        >
-                            <Typography variant="h6">Статус смены</Typography>
-                            <Chip
-                                color="success"
-                                label="Готов к приёму звонков"
-                                size="small"
+            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                {STATS.map((s) => (
+                    <Col xs={24} sm={12} lg={6} key={s.title}>
+                        <Card size="small">
+                            <Statistic
+                                title={s.title}
+                                value={s.value}
+                                prefix={<span style={{ color: s.color }}>{s.icon}</span>}
+                                valueStyle={{ color: s.color, fontSize: 28 }}
                             />
-                        </Stack>
-                        <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                            Текущая смена: 09:00–18:00. Следующий перерыв через 35 минут.
-                        </Typography>
+                        </Card>
+                    </Col>
+                ))}
+            </Row>
 
-                        <Divider />
+            <Row gutter={[16, 16]}>
+                {/* Мои обращения */}
+                <Col xs={24} xl={14}>
+                    <Card
+                        title="Мои активные обращения"
+                        size="small"
+                        extra={<a onClick={() => navigate("/operator/tickets")}>Все</a>}
+                    >
+                        <Table
+                            columns={myTicketColumns}
+                            dataSource={MY_TICKETS}
+                            rowKey="id"
+                            pagination={false}
+                            size="small"
+                            locale={{ emptyText: "Нет активных обращений" }}
+                        />
+                    </Card>
+                </Col>
 
-                        <Typography variant="subtitle2">Лента событий (demo)</Typography>
-                        <Stack spacing={0.75}>
-                            {events.map((e, idx) => (
-                                <Stack key={idx} direction="row" spacing={1}>
-                                    <Typography
-                                        variant="caption"
-                                        sx={{ color: "text.secondary", minWidth: 46 }}
-                                    >
-                                        {e.time}
-                                    </Typography>
-                                    <Typography variant="body2">{e.text}</Typography>
-                                </Stack>
-                            ))}
-                        </Stack>
-                    </Stack>
-                </Paper>
-            </Grid>
-
-            {/* Последние обращения */}
-            <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 2, height: "100%" }}>
-                    <Stack spacing={1.5}>
-                        <Typography variant="h6">Последние обращения</Typography>
-                        <List dense>
-                            {recentTickets.map((t) => (
-                                <ListItem key={t.id} disableGutters>
-                                    <ListItemText
-                                        primary={
-                                            <Stack
-                                                direction="row"
-                                                justifyContent="space-between"
-                                            >
-                                                <Typography
-                                                    variant="body2"
-                                                    sx={{ fontWeight: 500 }}
-                                                >
-                                                    {t.id} • {t.client}
-                                                </Typography>
-                                                <Typography variant="body2">
-                                                    {t.status}
-                                                </Typography>
-                                            </Stack>
-                                        }
-                                        secondary={
-                                            <Typography
-                                                variant="caption"
-                                                sx={{ color: "text.secondary" }}
-                                            >
-                                                {t.subject}
-                                            </Typography>
-                                        }
-                                    />
-                                </ListItem>
-                            ))}
-                        </List>
-                        <Box textAlign="right">
-                            <Button size="small">Открыть список обращений</Button>
-                        </Box>
-                    </Stack>
-                </Paper>
-            </Grid>
-
-            {/* Подсказки из базы знаний */}
-            <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 2, height: "100%" }}>
-                    <Stack spacing={1.5}>
-                        <Typography variant="h6">Быстрые подсказки</Typography>
-                        <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                            Популярные статьи базы знаний для типичных обращений.
-                        </Typography>
-                        <Stack spacing={1}>
-                            {kbHints.map((title, idx) => (
-                                <Button
-                                    key={idx}
-                                    variant="outlined"
-                                    size="small"
-                                    sx={{ justifyContent: "flex-start" }}
-                                    fullWidth
-                                >
-                                    {title}
-                                </Button>
-                            ))}
-                        </Stack>
-                    </Stack>
-                </Paper>
-            </Grid>
-        </Grid>
+                {/* Очередь */}
+                <Col xs={24} xl={10}>
+                    <Card title="Очередь ожидания" size="small">
+                        <Table
+                            columns={queueColumns}
+                            dataSource={QUEUE}
+                            rowKey="id"
+                            pagination={false}
+                            size="small"
+                            locale={{ emptyText: "Очередь пуста" }}
+                        />
+                    </Card>
+                </Col>
+            </Row>
+        </div>
     );
 }
